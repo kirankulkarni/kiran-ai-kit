@@ -1,0 +1,23 @@
+[
+  {"query": "src/pricing.py has the promo stacking logic and i've just finished reworking it. get a different model to tear it apart before i commit - i don't want another caching bug slipping through", "should_trigger": true},
+  {"query": "i want a second opinion on src/pricing.py from something that isn't claude. an independent pass, not you re-reading your own work", "should_trigger": true},
+  {"query": "run the whole plan then critique then build then review thing on the promo floor/cap work in src/pricing.py. i want codex looking at both the design and the code", "should_trigger": true},
+  {"query": "/gauntlet src/pricing.py ignores min_subtotal and max_discount, and src/promos.py refetches the catalog on every call", "should_trigger": true},
+  {"query": "set up a critic loop for the refactor i'm about to do on src/promos.py. i want something actually pushing back on the approach before i commit to it", "should_trigger": true},
+  {"query": "have codex do an adversarial review of src/pricing.py please", "should_trigger": true},
+  {"query": "build the min_subtotal and max_discount enforcement in src/pricing.py with subagents - one planning, one implementing, and something independent checking the work in between", "should_trigger": true},
+  {"query": "add a per-tenant rate limiter to src/promos.py. it has to share state across workers and degrade open if the store is down. this ships friday so get it independently reviewed once it's written", "should_trigger": true},
+  {"query": "implement the discount cap logic in src/pricing.py - min_subtotal is a floor on the original subtotal, max_discount caps each promo's discount, stacking order matters. adversarially review it when you're done", "should_trigger": true},
+  {"query": "the stacking branch in src/pricing.py has three promos interacting and i've been staring at it too long to trust my own read. can something independent check it", "should_trigger": true},
+
+  {"query": "can you review PR #443 on the delightiq/nexus repo? dishant opened it this morning for the recipe ordering change", "should_trigger": false},
+  {"query": "do a security review of the changes on this branch before i push - mainly worried about the new jwt handling", "should_trigger": false},
+  {"query": "whats the pricing on gpt-5.6-sol vs terra? trying to work out if running both is worth it for our review budget", "should_trigger": false},
+  {"query": "explain how adversarial testing works in the hypothesis library, specifically the shrinking behaviour", "should_trigger": false},
+  {"query": "rename `_validate_stackable` to `_filter_stackable` everywhere its used in src/pricing.py, should be 4 or 5 call sites", "should_trigger": false},
+  {"query": "add a code review checklist to CONTRIBUTING.md - we keep missing the same stuff in PRs and i want it written down", "should_trigger": false},
+  {"query": "can you critique this design doc i wrote for the tenant onboarding flow? its in notion, i'll paste it", "should_trigger": false},
+  {"query": "run the tests in tests/ and tell me if anything broke", "should_trigger": false},
+  {"query": "src/promos.py raises LookupError for unknown tenants and i can't work out which caller is swallowing it. can you trace it", "should_trigger": false},
+  {"query": "i want to add a second reviewer to the CODEOWNERS file for anything under src/", "should_trigger": false}
+]

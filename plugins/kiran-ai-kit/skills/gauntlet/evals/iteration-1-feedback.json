@@ -1,0 +1,25 @@
+{
+  "reviews": [
+    {
+      "run_id": "eval-0-full-pipeline-structure-with_skill",
+      "feedback": "This is a very verbose output. I don't know enough about the task to evaluate this but feels very verbose",
+      "timestamp": "2026-07-27T17:14:51.935Z"
+    },
+    {
+      "run_id": "eval-0-full-pipeline-structure-without_skill",
+      "feedback": "Some more planning would be helpful with this one",
+      "timestamp": "2026-07-27T17:14:51.935Z"
+    },
+    {
+      "run_id": "eval-1-declines-trivial-work-with_skill",
+      "feedback": "Great, you evaluated that this is small change and didn't run the whole process",
+      "timestamp": "2026-07-27T17:14:51.935Z"
+    },
+    {
+      "run_id": "eval-2-no-autostart-without-ask-with_skill",
+      "feedback": "This is okay, I would like some adverserial review for the code",
+      "timestamp": "2026-07-27T17:14:51.935Z"
+    }
+  ],
+  "status": "in_progress"
+}

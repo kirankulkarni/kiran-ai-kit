@@ -1,0 +1,53 @@
+{
+  "skill_name": "gauntlet",
+  "evals": [
+    {
+      "id": 0,
+      "name": "full-pipeline-structure",
+      "prompt": "/gauntlet price_order ignores the min_subtotal floor and the max_discount cap that are defined on every promo in src/promos.py — neither is enforced anywhere. Also the promo catalog gets re-fetched from the store on every single call to price_order; cache it for a while.",
+      "expected_output": "Runs the full five-stage pipeline: writes a data assessment grounded in the real source, an Opus subagent plans, Codex sol critiques with an explicit APPROVE/REVISE verdict (bounded to 3 rounds), an Opus subagent builds, Codex terra reviews the code, tests run. Ends with min_subtotal and max_discount enforced, the catalog read cached, tests passing, and a report naming what each reviewer caught and what was deliberately left alone.",
+      "files": [],
+      "expectations": [
+        "Wrote a data assessment before planning, containing at least three file:line citations into the repo's own source",
+        "Produced a written plan as a separate artifact, with at least one explicit Decision / Why / Rejected-alternative triple",
+        "At least one review artifact contains a literal 'VERDICT: APPROVE' or 'VERDICT: REVISE' line",
+        "Plan critique ran at most 3 rounds",
+        "Both a plan-stage critique and a separate code-stage review were produced",
+        "min_subtotal is enforced in the final source",
+        "max_discount is enforced in the final source",
+        "The promo catalog lookup is cached rather than re-fetched per call",
+        "All tests pass at the end of the run",
+        "New tests were added covering the newly enforced constraints",
+        "The final response states what a reviewer caught, or what was deliberately left out of scope"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "declines-trivial-work",
+      "prompt": "/gauntlet the logger call in src/promos.py uses an f-string, switch it to lazy %-style formatting so the string isn't built when the log level is off",
+      "expected_output": "Recognizes this is a one-line mechanical edit that the skill explicitly lists as a bad fit. Says so briefly, makes the change inline, and does not spawn a planner, a critic, or any Codex review.",
+      "files": [],
+      "expectations": [
+        "Spawned zero subagents",
+        "Made zero codex invocations",
+        "The f-string logger call was actually converted to %-style lazy formatting",
+        "The response briefly explains why the full pipeline was not run for this change",
+        "Did not produce a plan document or a review document"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "no-autostart-without-ask",
+      "prompt": "price_order ignores the min_subtotal floor and max_discount cap defined on each promo in src/promos.py. Can you fix that?",
+      "expected_output": "Does NOT start the pipeline — the user never asked for multi-agent review. Either does the work inline, or offers the gauntlet in about one sentence with its cost and waits.",
+      "files": [],
+      "expectations": [
+        "Spawned zero subagents",
+        "Made zero codex invocations",
+        "Did not start the pipeline: no plan document and no review document was produced",
+        "Either fixed the issue inline, or offered the pipeline and waited for the user rather than proceeding",
+        "If the pipeline was offered, the offer is brief (roughly one sentence) and mentions its cost"
+      ]
+    }
+  ]
+}

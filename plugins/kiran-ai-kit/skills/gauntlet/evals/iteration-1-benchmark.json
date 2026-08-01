@@ -1,0 +1,396 @@
+{
+  "metadata": {
+    "skill_name": "gauntlet",
+    "skill_path": "/Users/kiran/.claude/skills/gauntlet",
+    "executor_model": "claude-opus-5[1m]",
+    "analyzer_model": "claude-opus-5[1m]",
+    "timestamp": "2026-07-27T15:48:05Z",
+    "evals_run": [
+      0,
+      1,
+      2
+    ],
+    "runs_per_configuration": 1
+  },
+  "runs": [
+    {
+      "eval_id": 0,
+      "eval_name": "full-pipeline-structure",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 11,
+        "failed": 0,
+        "total": 11,
+        "time_seconds": 6036.0,
+        "tokens": 495904,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Wrote a data assessment before planning, containing at least three file:line citations into the repo's own source",
+          "passed": true,
+          "evidence": "outputs/00_DATA_ASSESSMENT.md exists (18591 bytes). A regex count of file:line-shaped citations found 49 occurrences, of which the distinct in-repo targets include promos.py:14-40, promos.py:43-49, promos.py:49, pricing.py:10-17, pricing.py:12, pricing.py:20-21, pricing.py:28-36, pricing.py:39-61, tests/test_pricing.py:21-24, CLAUDE.md:12/17/18/19 -- far more than three, and all into the repo's own source rather than into the plan. Ordering before planning is established by content, not mtime (all files were copied at 21:08): outputs/01_PLAN.md contains a section '## 1. Corrections to the data assessment' and '## 2. Answers to the open questions' that answer the assessment's numbered Q1-Q8 verbatim, so the assessment demonstrably preceded it."
+        },
+        {
+          "text": "Produced a written plan as a separate artifact, with at least one explicit Decision / Why / Rejected-alternative triple",
+          "passed": true,
+          "evidence": "outputs/01_PLAN.md is a separate 71271-char / 1211-line artifact. Scripted count: 8 occurrences of '**Decision', 8 of 'Rejected alternative'. Example triple at 01_PLAN.md Q1: '**Decision: No. `applied` is derived from the promos that survive *all* filtering...**' / '**Why:** `pricing.py:61` returns `applied` alongside `total`...' / '**Rejected alternative: keep `applied` as \"codes the caller supplied that resolved to a real promo\", and add a separate `rejected` or `skipped` key.** Rejected because it grows the public response shape...'. Q2-Q8 follow the same shape."
+        },
+        {
+          "text": "At least one review artifact contains a literal 'VERDICT: APPROVE' or 'VERDICT: REVISE' line",
+          "passed": true,
+          "evidence": "grep -rn 'VERDICT' outputs/ returns literal line-1 verdicts in three review artifacts: 03_REVIEW_R1.md:1 'VERDICT: REVISE', 05_REVIEW_R2.md:1 'VERDICT: APPROVE', 07_CODE_REVIEW.md:1 'VERDICT: APPROVE'. (The remaining hits are the required-format instructions inside the critic prompts 02/04/06.)"
+        },
+        {
+          "text": "Plan critique ran at most 3 rounds",
+          "passed": true,
+          "evidence": "Exactly 2 plan-critique rounds exist as artifacts: 02_CRITIC_PROMPT_R1 -> 03_REVIEW_R1 (VERDICT: REVISE) -> 04_CRITIC_PROMPT_R2 -> 05_REVIEW_R2 (VERDICT: APPROVE). There is no R3 artifact and scratch/ contains only sol_r1_raw.log and sol_r2_raw.log (two Codex plan-critique invocations), corroborating that the loop terminated at 2 <= 3."
+        },
+        {
+          "text": "Both a plan-stage critique and a separate code-stage review were produced",
+          "passed": true,
+          "evidence": "Plan stage: 03_REVIEW_R1.md and 05_REVIEW_R2.md critique the plan (they cite '../scratch/01_PLAN.md:362', ':532', ':681', ':817' etc.). Code stage: 07_CODE_REVIEW.md is a separate artifact that reviews the built code, citing repo/src/pricing.py:31, :39, :72, :81 and repo/src/promos.py:60, :67, :71 and reporting 'Ran .venv/bin/python -m pytest tests/ -q (33 passed), the same suite with files in reverse order... and each test file in a separate process'. scratch/ shows two distinct raw logs for the two stages (sol_r*_raw.log for the plan critic, terra_raw.log for the code reviewer), i.e. different models."
+        },
+        {
+          "text": "min_subtotal is enforced in the final source",
+          "passed": true,
+          "evidence": "repo/src/pricing.py defines _min_subtotal() and _validate_min_subtotal(), called from price_order before _validate_stackable. Behavioural probe I ran against the final tree: price_order('tenant-a', 10.0, ['FLAT20']) -> {'total': 10.0, 'applied': []} with a warning 'Dropped promo FLAT20: subtotal 10.0 is below its min_subtotal 50.0' (was -10.0 before the change). CAVEAT: this arm was not isolated -- it could read the baseline arm's tree and a shared scratchpad containing a prior complete solution to this same ticket, so the fact that a correct enforcement exists is not evidence it was independently derived. The assertion as written only asks whether it is enforced in the final source, which it verifiably is."
+        },
+        {
+          "text": "max_discount is enforced in the final source",
+          "passed": true,
+          "evidence": "repo/src/pricing.py defines _max_discount() (None-safe, clamps a negative cap to 0.0) and _apply_promo() which returns total - cap when total - discounted > cap. Probe: price_order('tenant-a', 400.0, ['SAVE10']) -> total 375.0 with 'Capped promo SAVE10 discount 40.0 at max_discount 25.0' (was 360.0). Same isolation caveat as the min_subtotal assertion: correctness here cannot be attributed to independent work by this arm."
+        },
+        {
+          "text": "The promo catalog lookup is cached rather than re-fetched per call",
+          "passed": true,
+          "evidence": "repo/src/promos.py splits the old body into _fetch_catalog() and wraps it in get_promo_catalog() over _catalog_cache: dict[str, tuple[float, dict]] keyed by tenant, with CATALOG_TTL_SECONDS = 60.0 measured on time.monotonic(), a clear_catalog_cache() hook, and the cache write placed after the fetch so LookupError is never cached. Measured: 5 consecutive price_order calls took 0.000s in this tree vs 0.290s in the (uncached) eval-2 tree, i.e. one store round-trip total instead of five. Same isolation caveat applies to attribution."
+        },
+        {
+          "text": "All tests pass at the end of the run",
+          "passed": true,
+          "evidence": "I re-ran the suite myself: repo/.venv/bin/python -m pytest tests/ -q -> '35 passed in 0.48s'. outputs/test_output.txt independently records '35 passed in 0.48s'."
+        },
+        {
+          "text": "New tests were added covering the newly enforced constraints",
+          "passed": true,
+          "evidence": "Two new files: tests/test_promo_limits.py (19 test functions) and tests/test_promo_cache.py (11), with tests/test_pricing.py's original 5 untouched -- 35 total. They are targeted at the new behaviour, not filler: test_promo_below_min_subtotal_is_not_applied, test_promo_at_exactly_min_subtotal_is_applied, test_floor_is_checked_against_order_subtotal_not_running_total, test_negative_min_subtotal_admits_a_lower_subtotal, test_percent_discount_capped_at_max_discount, test_discount_exactly_at_cap_is_untouched, test_zero_max_discount_discounts_nothing_but_stays_applied, test_negative_max_discount_is_clamped_to_zero, test_ttl_boundary_controls_refetching, test_expired_entry_returns_refreshed_catalog, test_unknown_tenant_is_not_cached. The TTL pair specifically was rewritten in response to 03_REVIEW_R1's material objection that the original TTL test passed against a never-expiring cache."
+        },
+        {
+          "text": "The final response states what a reviewer caught, or what was deliberately left out of scope",
+          "passed": true,
+          "evidence": "outputs/RESPONSE.md does both. Reviewer-caught: a section 'What the reviews caught, and what they cleared' -- 'The plan review (2 rounds) found one material defect: the TTL test did not test the TTL... A cache that ignored elapsed time entirely and only honoured TTL == 0 passes both -- I reproduced it before routing the objection', plus the code review's single test gap. Out of scope: a 'Deliberately not fixed' section listing negative amount/percent, negative totals, duplicate codes, no cache eviction or locking, and float money. It also discloses the contamination itself in a 'Process note' ('The agent scratchpad on this machine holds a stale src/ from an earlier run of this pipeline containing a different implementation of this same fix')."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 0,
+      "eval_name": "full-pipeline-structure",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.5455,
+        "passed": 6,
+        "failed": 5,
+        "total": 11,
+        "time_seconds": 439.9,
+        "tokens": 56612,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Wrote a data assessment before planning, containing at least three file:line citations into the repo's own source",
+          "passed": false,
+          "evidence": "outputs/ contains only RESPONSE.md, diff.txt and test_output.txt -- no assessment artifact of any kind. A scripted regex count of file:line-shaped citations across all three files returned 0 in every file. Expected for a baseline arm with no skill driving artifact production."
+        },
+        {
+          "text": "Produced a written plan as a separate artifact, with at least one explicit Decision / Why / Rejected-alternative triple",
+          "passed": false,
+          "evidence": "No plan artifact exists (ls of outputs/ shows RESPONSE.md, diff.txt, test_output.txt only). RESPONSE.md does contain a 'Two things I decided that you may want to overrule' section with reasoning, but that is a post-hoc summary in the final response, not a separate plan artifact, and it contains no 'Rejected alternative' element in the required triple form."
+        },
+        {
+          "text": "At least one review artifact contains a literal 'VERDICT: APPROVE' or 'VERDICT: REVISE' line",
+          "passed": false,
+          "evidence": "grep -rn 'VERDICT' over without_skill/outputs/ exits 1 with no matches. No review artifact of any kind was produced."
+        },
+        {
+          "text": "Plan critique ran at most 3 rounds",
+          "passed": false,
+          "evidence": "No plan critique ran at all -- there is no plan artifact and no review artifact, and no second model was invoked. The <=3 bound is only vacuously satisfied by the absence of the thing it bounds, which is surface compliance rather than the behaviour the assertion is probing, so this is graded FAIL. (Flagged in eval_feedback: the assertion should require at least one round.)"
+        },
+        {
+          "text": "Both a plan-stage critique and a separate code-stage review were produced",
+          "passed": false,
+          "evidence": "Neither was produced. outputs/ holds no critique or review file. RESPONSE.md describes self-review only: 'I verified the new tests aren't vacuous by mutating the fixes in a throwaway copy' -- same agent, no independent reviewer."
+        },
+        {
+          "text": "min_subtotal is enforced in the final source",
+          "passed": true,
+          "evidence": "repo/src/pricing.py defines _meets_min_subtotal(code, promo, subtotal) and price_order skips any promo failing it. Behavioural probe I ran: price_order('tenant-a', 10.0, ['FLAT20']) -> {'total': 10.0, 'applied': []} with warning \"Promo 'FLAT20' needs a subtotal of at least 50.0, got 10.0\". Pinned by tests test_promo_below_min_subtotal_is_skipped, test_min_subtotal_is_inclusive, test_min_subtotal_measured_against_original_subtotal."
+        },
+        {
+          "text": "max_discount is enforced in the final source",
+          "passed": true,
+          "evidence": "repo/src/pricing.py defines _cap_discount(code, promo, discount) which clamps to promo['max_discount'] when set, called from _discount_for(). Probe: price_order('tenant-a', 400.0, ['SAVE10']) -> total 375.0 with \"Promo 'SAVE10' discount 40.0 capped at 25.0\". Pinned by test_percent_discount_capped, test_fixed_discount_capped, test_cap_applies_per_promo_when_stacked."
+        },
+        {
+          "text": "The promo catalog lookup is cached rather than re-fetched per call",
+          "passed": true,
+          "evidence": "repo/src/promos.py adds _CACHE: dict[str, tuple[float, dict]], CATALOG_TTL_SECONDS = 60.0, time.monotonic()-based expiry, _fetch_promo_catalog() split out, and clear_promo_catalog_cache(). Only successful reads are cached (the write follows the fetch, so LookupError is not memoised). The fetch is also hoisted out of the per-code loop in price_order. Measured: 5 consecutive price_order calls took 0.000s here vs 0.290s in the uncached eval-2 tree."
+        },
+        {
+          "text": "All tests pass at the end of the run",
+          "passed": true,
+          "evidence": "I re-ran the suite: repo/.venv/bin/python -m pytest tests/ -q -> '20 passed in 1.19s'. outputs/test_output.txt records '20 passed in 1.17s'."
+        },
+        {
+          "text": "New tests were added covering the newly enforced constraints",
+          "passed": true,
+          "evidence": "tests/test_pricing.py grew from 5 to 20 test functions, all appended to the existing file rather than in new files. The 15 new ones cover both constraints and the cache: test_promo_below_min_subtotal_is_skipped, test_min_subtotal_is_inclusive, test_min_subtotal_measured_against_original_subtotal, test_ineligible_promo_left_out_of_applied, test_percent_discount_capped, test_percent_discount_below_cap_is_untouched, test_fixed_discount_capped, test_cap_applies_per_promo_when_stacked, test_catalog_fetched_once_per_order, test_catalog_reused_across_orders, test_catalog_refetched_after_ttl, test_cache_is_per_tenant, test_no_codes_skips_the_catalog_entirely, test_missing_tenant_is_not_cached, test_clear_cache_forces_a_refetch."
+        },
+        {
+          "text": "The final response states what a reviewer caught, or what was deliberately left out of scope",
+          "passed": true,
+          "evidence": "No reviewer existed, but the second half of the disjunction is satisfied: outputs/RESPONSE.md states 'One thing I left alone: nothing clamps the total at zero, so enough stacked fixed-amount promos can still drive it negative. That was true before and it's a policy call (refund? floor at 0? reject the combination?), so I didn't invent an answer'. It also flags two decisions the user may want to overrule. Note this assertion is non-discriminating precisely because of the 'or' branch."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "eval_name": "declines-trivial-work",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 113.4,
+        "tokens": 33835,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Spawned zero subagents",
+          "passed": true,
+          "evidence": "outputs/actions.md has an explicit '## Subagents spawned' section reading 'None.' Corroborated by the artifact set: outputs/ contains only actions.md, diff.txt and RESPONSE.md -- no plan, critique or review documents -- and the run's own tool-call log lists 9 steps, all Read/Bash/Edit/Write. There is no scratch/ directory for this run ('Nothing written to the scratch directory'). Token cost 33835 total (timing.json), which is far below what a single subagent would add."
+        },
+        {
+          "text": "Made zero codex invocations",
+          "passed": true,
+          "evidence": "outputs/actions.md '## `codex` invocations: None.' Corroborated by the absence of any Codex raw log (contrast eval-0 with_skill, which has scratch/sol_r1_raw.log, sol_r2_raw.log, terra_raw.log) and by the itemised tool-call list, which contains no `codex` bash command."
+        },
+        {
+          "text": "The f-string logger call was actually converted to %-style lazy formatting",
+          "passed": true,
+          "evidence": "grep of the final tree: repo/src/promos.py:45 is now `logger.info(\"Fetching promo catalog for tenant %s\", tenant_id)`. outputs/diff.txt shows the exact one-line replacement of the previous f-string. It is the only `logger.` call in that file. I re-ran repo/.venv/bin/python -m pytest tests/ -q -> 5 passed. The run also correctly left `raise LookupError(f\"...\")` at line 48 as an f-string, since %-args do not apply to exception messages."
+        },
+        {
+          "text": "The response briefly explains why the full pipeline was not run for this change",
+          "passed": true,
+          "evidence": "outputs/RESPONSE.md opens with it: 'I didn't run the gauntlet for this one -- it's a one-line mechanical edit I can fully verify in a few tool calls, which is exactly the case the skill says not to spend it on (a full run costs ~500k-1M subagent tokens and an hour or two). No subagents, no Codex.' One sentence, cites both the triviality and the cost. actions.md records the same reasoning against the skill's 'When to run it' section."
+        },
+        {
+          "text": "Did not produce a plan document or a review document",
+          "passed": true,
+          "evidence": "ls of outputs/ returns exactly actions.md, diff.txt, RESPONSE.md. No 0x_PLAN / 0x_REVIEW / CRITIC artifacts, no VERDICT lines anywhere, and no scratch/ directory. The repo diff creates no files ('(no new files created in repo)' in diff.txt)."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "eval_name": "declines-trivial-work",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.8,
+        "passed": 4,
+        "failed": 1,
+        "total": 5,
+        "time_seconds": 62.3,
+        "tokens": 25414,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Spawned zero subagents",
+          "passed": true,
+          "evidence": "outputs/actions.md '## Subagents spawned: none'. Corroborated by the artifact set (outputs/ holds only actions.md, diff.txt, RESPONSE.md), the itemised 8-step tool log which is entirely Bash/Read/Edit/Write, and a total cost of 25414 tokens in 62.3s (timing.json) -- too small for any subagent."
+        },
+        {
+          "text": "Made zero codex invocations",
+          "passed": true,
+          "evidence": "outputs/actions.md '## `codex` invocations: none'. No Codex raw log exists and no `codex` command appears in the numbered command list."
+        },
+        {
+          "text": "The f-string logger call was actually converted to %-style lazy formatting",
+          "passed": true,
+          "evidence": "repo/src/promos.py:45 is now `logger.info(\"Fetching promo catalog for tenant %s\", tenant_id)`; outputs/diff.txt shows the identical one-line change made by the with_skill arm. I re-ran repo/.venv/bin/python -m pytest tests/ -q -> 5 passed. The LookupError f-string at line 48 was correctly left alone."
+        },
+        {
+          "text": "The response briefly explains why the full pipeline was not run for this change",
+          "passed": false,
+          "evidence": "outputs/RESPONSE.md never mentions a pipeline, subagents, reviewers or cost. It opens 'Done -- `src/promos.py:45`' and then flags the CLAUDE.md contradiction and the two remaining f-strings in pricing.py. actions.md likewise has no rationale section -- it declares 'Subagents spawned: none' and 'Skills invoked: none' as bare facts without explaining the choice. Expected: with no skill loaded there was no pipeline to decline, so there was nothing to explain."
+        },
+        {
+          "text": "Did not produce a plan document or a review document",
+          "passed": true,
+          "evidence": "ls of outputs/ returns exactly actions.md, diff.txt, RESPONSE.md. No plan/critique/review artifacts, no VERDICT strings, no scratch/ directory, and diff.txt records '=== New / untracked files === (none)'."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "no-autostart-without-ask",
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 172.2,
+        "tokens": 36665,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Spawned zero subagents",
+          "passed": true,
+          "evidence": "outputs/actions.md '## Subagents spawned: **None.** The task touched two files in a repo with five tests; fan-out search or parallel agents would have added latency without adding information.' Corroborated by the artifact set (outputs/ = actions.md, diff.txt, RESPONSE.md only), the absence of any scratch/ directory, the 11-step tool log which is entirely Bash/Read/Edit/Write, and a total of 36665 tokens / 172s (timing.json)."
+        },
+        {
+          "text": "Made zero codex invocations",
+          "passed": true,
+          "evidence": "outputs/actions.md: '**None.** `codex` is on PATH but was not called. No adversarial or second-model review was requested, and the gauntlet pipeline (the thing that would have driven a Codex review) was deliberately not started.' No Codex raw log exists (contrast eval-0 with_skill's scratch/sol_r1_raw.log, sol_r2_raw.log, terra_raw.log) and no `codex` command appears in the numbered tool list."
+        },
+        {
+          "text": "Did not start the pipeline: no plan document and no review document was produced",
+          "passed": true,
+          "evidence": "ls of outputs/ returns exactly actions.md, diff.txt, RESPONSE.md -- no 00_DATA_ASSESSMENT / 01_PLAN / 0x_REVIEW artifacts and no VERDICT lines. actions.md also records 'Scratch directory was not needed and was not used', and no scratch/ directory exists for this run. Files changed in the repo are only src/pricing.py and tests/test_pricing.py."
+        },
+        {
+          "text": "Either fixed the issue inline, or offered the pipeline and waited for the user rather than proceeding",
+          "passed": true,
+          "evidence": "Fixed inline, and the fix works. repo/src/pricing.py adds _is_eligible() (min_subtotal gate, line 27) and _cap_discount() (max_discount clamp, line 46). Behavioural probe I ran on the final tree: price_order('tenant-a', 10.0, ['FLAT20']) -> {'total': 10.0, 'applied': []} (was -10.0); price_order('tenant-a', 400.0, ['SAVE10']) -> total 375.0 (was 360.0). I re-ran repo/.venv/bin/python -m pytest tests/ -q -> '11 passed', up from the original 5, with 6 new tests covering the floor, the exact boundary, both cap kinds, floor-vs-running-total, and `applied` correctness."
+        },
+        {
+          "text": "If the pipeline was offered, the offer is brief (roughly one sentence) and mentions its cost",
+          "passed": true,
+          "evidence": "Vacuously satisfied: the pipeline was not offered. RESPONSE.md contains no mention of the gauntlet, subagents or a review pipeline at all, and actions.md states the choice explicitly -- 'I judged it inapplicable and did not offer it, since offering an hour-long pipeline for a small bug fix would itself be noise.' The conditional's antecedent is false, so the assertion holds. Flagged as non-discriminating: it also passes vacuously for the baseline arm."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "eval_name": "no-autostart-without-ask",
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 189.0,
+        "tokens": 37048,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "Spawned zero subagents",
+          "passed": true,
+          "evidence": "outputs/actions.md '## Subagents spawned: None.' Corroborated by the artifact set (outputs/ = actions.md, diff.txt, RESPONSE.md only), no scratch/ directory, an 11-step tool log containing only Bash/Read/Edit/Write, and 37048 tokens / 189s total (timing.json)."
+        },
+        {
+          "text": "Made zero codex invocations",
+          "passed": true,
+          "evidence": "outputs/actions.md '## `codex` invocations: None.' No Codex raw log exists and no `codex` command appears in the numbered command list."
+        },
+        {
+          "text": "Did not start the pipeline: no plan document and no review document was produced",
+          "passed": true,
+          "evidence": "ls of outputs/ returns exactly actions.md, diff.txt, RESPONSE.md. No plan, critique or review artifact and no VERDICT string anywhere. Files changed in the repo are only src/pricing.py and tests/test_pricing.py; diff.txt's untracked listing is empty. actions.md also records '## Skills invoked: None.'"
+        },
+        {
+          "text": "Either fixed the issue inline, or offered the pipeline and waited for the user rather than proceeding",
+          "passed": true,
+          "evidence": "Fixed inline and verified. repo/src/pricing.py adds _is_eligible() (min_subtotal gate at line 22) and _discount_for() with a max_discount clamp (line 40). Behavioural probe I ran: price_order('tenant-a', 10.0, ['FLAT20']) -> {'total': 10.0, 'applied': []} with warning \"Promo 'FLAT20' needs a subtotal of 50.0, got 10.0\"; price_order('tenant-a', 400.0, ['SAVE10']) -> total 375.0. I re-ran repo/.venv/bin/python -m pytest tests/ -q -> '11 passed', 6 tests added to the original 5."
+        },
+        {
+          "text": "If the pipeline was offered, the offer is brief (roughly one sentence) and mentions its cost",
+          "passed": true,
+          "evidence": "Vacuously satisfied: no pipeline was offered -- RESPONSE.md makes no mention of a pipeline, subagents or adversarial review, and with no skill loaded there was nothing to offer. Flagged as non-discriminating: the conditional's antecedent is false in every run of this eval, so the assertion cannot fail."
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 2107.2,
+        "stddev": 2778.1848,
+        "min": 113.4,
+        "max": 6036.0
+      },
+      "tokens": {
+        "mean": 188801.3333,
+        "stddev": 217157.4515,
+        "min": 33835,
+        "max": 495904
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.7818,
+        "stddev": 0.186,
+        "min": 0.5455,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 230.4,
+        "stddev": 156.9095,
+        "min": 62.3,
+        "max": 439.9
+      },
+      "tokens": {
+        "mean": 39691.3333,
+        "stddev": 12872.9486,
+        "min": 25414,
+        "max": 56612
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.22",
+      "time_seconds": "+1876.8",
+      "tokens": "+149110"
+    }
+  },
+  "notes": [
+    "VOID FOR QUALITY: eval-0's arms were not isolated. The with-skill run could read the baseline arm's working tree and a shared session scratchpad holding a prior complete solution to the same task. Structural/process assertions are unaffected; any claim that the with-skill solution was independently arrived at is not supported.",
+    "eval-0 with_skill tokens (495904) are a FLOOR: orchestrator + two observed sub-agents. The true figure is higher. Baseline was 56612 -- roughly a 10x gap, and 14x on wall clock.",
+    "Non-discriminating (passed in every run regardless of configuration): eval-2's five assertions in full; eval-1's three negative assertions, which a baseline cannot fail; and eval-0's 'min_subtotal enforced' / 'max_discount enforced' / 'all tests pass' / 'new tests added' -- the baseline achieved all four at ~1/10th the cost.",
+    "eval-0 'The final response states what a reviewer caught, OR what was left out of scope' is carried by its second branch, so a run with no reviewer at all passes it. Split it.",
+    "eval-0 'Plan critique ran at most 3 rounds' is satisfied vacuously by zero rounds. The grader failed the baseline on intent rather than letter; the wording needs fixing.",
+    "UNASSERTED, and the strongest signal observed: the plan critic caught that a TTL test passed against a never-expiring cache, reproduced the mutant, and forced a fake-clock rewrite. Nothing in the eval set checks for this. A mutation-kill assertion is the highest -value addition for iteration 2."
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "kiran-ai-kit",
+  "description": "Kiran's personal Claude Code plugins and skills.",
+  "owner": {
+    "name": "Kiran Kulkarni",
+    "email": "contact@kiran.pro",
+    "url": "https://github.com/kirankulkarni"
+  },
+  "plugins": [
+    {
+      "name": "kiran-ai-kit",
+      "source": "./plugins/kiran-ai-kit",
+      "description": "A bundle of personal skills for Claude Code. Currently ships gauntlet, an adversarial plan-build-review pipeline that uses a second model family as the critic.",
+      "category": "development"
+    }
+  ]
+}
